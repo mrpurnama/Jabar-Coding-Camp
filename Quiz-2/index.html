@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app">
+    <input type="text" v-model:value="inputValue">
+    <button v-if="!isEdit" @click="addData(inputValue)"> Add </button>
+    <button v-if="isEdit" @click="submitEdit(inputValue, editIndex)"> Update </button>
+    <ul>
+        <li v-for="(user, index) in users" style="margin: 10px 0">
+            {{ user }}
+            <button @click="openEdit(user, index)">Edit</button>
+            ||
+            <button @click="deleteData(index)">Delete</button>
+        </li>
+    </ul>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+  <script>
+   var vm = new Vue({
+      el: '#app',
+      data: {
+        inputValue: '',
+        users: [
+            'Muhammad Iqbal Mubarok',
+            'Ruby Purwanti',
+            'Faqih Muhammad',
+        ],
+        isEdit: false,
+        editIndex: null
+      },
+      computed : {},
+      methods : {
+        addData: function(data) {
+            this.users.push(data)
+        },
+        openEdit: function(data, index) {
+            this.inputValue = data;
+            this.editIndex = index;
+            this.isEdit = true;
+        },
+        submitEdit: function(data, index) {
+            this.users[index] = data;
+            this.inputValue = '';
+            this.isEdit = false;
+        },
+        deleteData: function(index) {
+            if (confirm('Anda Yakin ?') == true) {
+                this.users.splice(index, 1);
+            }
+        }
+      }
+    })
+  </script>
+</body>
+</html>
