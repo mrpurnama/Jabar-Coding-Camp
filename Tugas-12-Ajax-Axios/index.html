@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app">
+    <h3>Tugas 12 - Axios CRUD Member</h3>
+    <form @submit.prevent="submitForm()">
+      <p v-if="errors.length > 0">
+        <b>Please correct the following erros : </b>
+        <ul>
+          <li v-for="error in errors">{{ error }}</li>
+        </ul>
+      </p>
+      <div>
+        <label for="name">Name</label>
+        <input type="text" id="name" ref="name" v-model="inputData.name" :disabled="formType == 'upload'" required>
+      </div>
+      <div>
+        <label for="no_hp">Phone</label>
+        <input type="text" id="no_hp" ref="no_hp" v-model="inputData.no_hp" :disabled="formType == 'upload'" required>
+      </div>
+      <div>
+        <label for="address">Address</label>
+        <textarea id="address" ref="address" v-model="inputData.address" :disabled="formType == 'upload'" required></textarea>
+      </div>
+      <div v-if="formType == 'new'">
+        <button type="submit">Submit Data</button>
+      </div>
+      <div v-else-if="formType == 'edit'">
+        <button type="button" @click="updateData(editID, inputData)">Update Data</button>
+        <button type="reset" @click="clearForm()">Reset</button>
+      </div>
+      <div v-else-if="formType == 'upload'">
+        <div>
+          <label for="photo_profile">Photo Profile</label>
+          <input type="file" id="photo_profile" ref="photo_profile" accept="image/*">
+        </div>
+        <button type="button" @click="uploadData(editID)" :disabled="isUploading">Upload Data</button>
+        <button type="reset" @click="clearForm()" :disabled="isUploading">Reset</button>
+      </div>
+    </form>
+    <br>
+    <br>
+
+    <button type="button" @click="getMembers()">Refresh Data</button>
+
+    <table>
+      <thead>
+        <th>No</th>
+        <th>Image</th>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Address</th>
+        <th>Action</th>
+      </thead>
+      <tbody>
+        <tr v-for="(member, index) in members">
+          <td>{{ index+1 }}</td>
+          <td><img :src="'http://demo-api-vue.sanbercloud.com/'+member.photo_profile" alt="" style="width: 50px; max-height: 100px;"></td>
+          <td>{{ member.name }}</td>
+          <td>{{ member.no_hp }}</td>
+          <td>{{ member.address }}</td>
+          <td style="white-space: nowrap;">
+            <button @click="openEdit(member.id, member)">Edit</button>
+            <button @click="openUpload(member.id, member)">Upload</button>
+            <button @click="deleteData(member.id)">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script>
+   var vm = new Vue({
+      el: '#app',
+      data: {
+        formType: 'new',
+        editID: null,
+        members: [],
+        inputData: {},
+        errors: [],
+        isUploading: false,
+      },
+      computed : {},
+      methods : {
+        getMembers: function () {
+          const config = {
+            method: 'get',
+            url: 'http://demo-api-vue.sanbercloud.com/api/member'
+          }
+          axios(config)
+          .then(response => {
+            this.members = response?.data?.members;
+          })
+          .catch(error => {
+            console.log(error)
+          });
+        },
+        validationForm: function() {
+          this.errors = [];
+
+          if (this.inputData?.name?.length < 1) {
+            this.errors.push('Name cant be blank');
+            this.$refs.name.focus();
+          }
+          if (this.inputData?.no_hp?.length < 1) {
+            this.errors.push('Phone cant be blank');
+            this.$refs.no_hp.focus();
+          }
+          if (this.inputData?.address?.length < 1) {
+            this.errors.push('Address cant be blank');
+            this.$refs.address.focus();
+          }
+          if (this.formType == 'upload' && !this.$refs?.photo_profile?.files[0]) {
+            this.errors.push('Photo Profile cant be blank');
+            this.$refs.photo_profile.focus();
+          }
+        },
+        submitForm: function () {
+          this.validationForm()
+          if (this.errors.length == 0) {
+            const config = {
+              method: 'post',
+              url: 'http://demo-api-vue.sanbercloud.com/api/member',
+              data: this.inputData,
+            }
+            axios(config)
+            .then(response => {
+              this.clearForm();
+              alert(response?.data?.message);
+              this.getMembers();
+            })
+            .catch(error => {
+              console.log(error)
+            });
+          }
+        },
+        clearForm: function () {
+          this.inputData = {};
+          this.formType = 'new';
+          this.editID = null;
+          this.errors = [];
+          this.isUploading = false;
+        },
+        openEdit: function(id, data) {
+          this.inputData = data;
+          this.editID = id;
+          this.formType = 'edit';
+        },
+        updateData: function(id, data) {
+          this.validationForm()
+          if (this.errors.length == 0) {
+            // Config yang dicontohkan di tutorial dan api doc
+            const config = {
+              method: 'POST',
+              url: `http://demo-api-vue.sanbercloud.com/api/member/${id}`,
+              params: { _method: 'PUT' },
+              data: this.inputData,
+            }
+            axios(config)
+            .then(response => {
+              this.clearForm();
+              alert(response?.data?.message);
+              this.getMembers();
+            })
+            .catch(error => {
+              console.log(error)
+            });
+          }
+        },
+        deleteData: function(id) {
+          if (confirm('Anda Yakin ?') == true) {
+            const config = {
+              method: 'POST',
+              url: `http://demo-api-vue.sanbercloud.com/api/member/${id}`,
+              params: { _method: 'DELETE' },
+              // data: this.inputData,
+            }
+            axios(config)
+            .then(response => {
+              this.clearForm();
+              alert(response?.data?.message);
+              this.getMembers();
+            })
+            .catch(error => {
+              console.log(error)
+            });
+          }
+        },
+        openUpload: function(id, data) {
+          this.inputData = data;
+          this.editID = id;
+          this.formType = 'upload';
+        },
+        uploadData: function(id) {
+          this.validationForm()
+          if (this.errors.length == 0) {
+            // Config yang dicontohkan di tutorial dan api doc
+            let file = this.$refs?.photo_profile?.files[0];
+
+            let formData = new FormData();
+            formData.append('photo_profile', file)
+
+            this.isUploading = true;
+
+            const config = {
+              method: 'POST',
+              url: `http://demo-api-vue.sanbercloud.com/api/member/${id}/upload-photo-profile`,
+              data: formData
+            }
+            axios(config)
+            .then(response => {
+              this.clearForm();
+              alert(response?.data?.message);
+              this.getMembers();
+            })
+            .catch(error => {
+              console.log(error)
+            });
+          }
+        }
+      },
+      created() {
+        this.getMembers()
+      },
+    })
+  </script>
+</body>
+</html>
